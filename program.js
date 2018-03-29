@@ -1,18 +1,34 @@
-var split = require('split')
+var http = require('http')
 var through = require('through2')
 
-var lineCount = 0
-var stream = through(function (buffer, encoding, next) {
-  var line = buffer.toString()
-  this.push(lineCount % 2 === 0
-    ? line.toLowerCase() + '\n'
-    : line.toUpperCase() + '\n'
-  )
-  lineCount++
+function write (buf, _, next) {
+  var chunk = buf.toString().toUpperCase()
+  this.push(chunk);
   next()
-})
+}
+function end (done) { done() }
 
-process.stdin
-  .pipe(split())
-  .pipe(stream)
-  .pipe(process.stdout)
+var server = http.createServer(function (req, res) {
+  if (req.method === 'POST') {
+    req.pipe(through(write, end)).pipe(res)
+  }
+})
+server.listen(process.argv[2])
+
+/*
+Here's the reference solution:
+
+  var http = require('http');
+  var through = require('through2');
+
+  var server = http.createServer(function (req, res) {
+      if (req.method === 'POST') {
+          req.pipe(through(function (buf, _, next) {
+              this.push(buf.toString().toUpperCase());
+              next();
+          })).pipe(res);
+      }
+      else res.end('send me a POST\n');
+  });
+  server.listen(parseInt(process.argv[2]));
+  */
